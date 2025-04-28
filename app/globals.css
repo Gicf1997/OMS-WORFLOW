@@ -1,0 +1,212 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 221.2 83.2% 53.3%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --radius: 0.5rem;
+  }
+
+  [data-accent="blue"] {
+    --accent: 221.2 83.2% 53.3%;
+    --ring: 221.2 83.2% 53.3%;
+  }
+
+  [data-accent="purple"] {
+    --accent: 262.1 83.3% 57.8%;
+    --ring: 262.1 83.3% 57.8%;
+  }
+
+  [data-accent="green"] {
+    --accent: 142.1 76.2% 36.3%;
+    --ring: 142.1 76.2% 36.3%;
+  }
+
+  [data-accent="orange"] {
+    --accent: 24.6 95% 53.1%;
+    --ring: 24.6 95% 53.1%;
+  }
+
+  [data-accent="red"] {
+    --accent: 0 72.2% 50.6%;
+    --ring: 0 72.2% 50.6%;
+  }
+
+  [data-accent="teal"] {
+    --accent: 173 80% 40%;
+    --ring: 173 80% 40%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 221.2 83.2% 53.3%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 221.2 83.2% 53.3%;
+  }
+
+  .dark[data-accent="blue"] {
+    --accent: 217.2 91.2% 59.8%;
+    --ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark[data-accent="purple"] {
+    --accent: 263.4 70% 50.4%;
+    --ring: 263.4 70% 50.4%;
+  }
+
+  .dark[data-accent="green"] {
+    --accent: 142.1 70.6% 45.3%;
+    --ring: 142.1 70.6% 45.3%;
+  }
+
+  .dark[data-accent="orange"] {
+    --accent: 20.5 90.2% 48.2%;
+    --ring: 20.5 90.2% 48.2%;
+  }
+
+  .dark[data-accent="red"] {
+    --accent: 0 73.7% 41.8%;
+    --ring: 0 73.7% 41.8%;
+  }
+
+  .dark[data-accent="teal"] {
+    --accent: 173 80% 36%;
+    --ring: 173 80% 36%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Transiciones suaves */
+.app-iframe {
+  transition: all 0.3s ease;
+}
+
+/* Animaciones para los botones */
+button {
+  transition: all 0.2s ease;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+/* Loading animation styles */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Improved dark mode styles */
+.dark .app-iframe {
+  filter: invert(0); /* Don't invert iframe content */
+}
+
+/* Enhanced transitions */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+.transition-opacity {
+  transition-property: opacity;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 500ms;
+}
+
+/* Improved focus styles for dark mode */
+.dark *:focus-visible {
+  outline: 2px solid hsl(var(--accent));
+  outline-offset: 2px;
+}
+
+/* Improved card styles for dark mode */
+.dark .card {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border-color: hsl(var(--border));
+}
+
+/* Improved button hover states */
+.dark button:hover {
+  opacity: 0.9;
+}
+
+/* Improved loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
