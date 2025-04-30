@@ -18,6 +18,8 @@ import {
   Keyboard,
   Download,
   Share2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
@@ -40,6 +42,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { DashboardIcon } from "@/components/dashboard-icon"
+import { SkipNavLink, SkipNavContent } from "@/components/skip-nav"
+import { useSwipeable } from "@/hooks/use-swipeable"
 
 export default function Home() {
   const searchParams = useSearchParams()
@@ -53,6 +57,10 @@ export default function Home() {
   const [showMobileNav, setShowMobileNav] = useState(true)
   const [lowDataMode, setLowDataMode] = useState(false)
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
+  const [activeTab, setActiveTab] = useState("dashboard")
+  const [fontSize, setFontSize] = useState("normal")
+  const [highContrast, setHighContrast] = useState(false)
+  const [reduceMotion, setReduceMotion] = useState(false)
   const deferredPromptRef = useRef<any>(null)
   const { theme, setTheme, resolvedTheme } = useTheme()
 
@@ -72,21 +80,24 @@ export default function Home() {
       name: "Dashboard",
       url: "https://script.google.com/macros/s/AKfycbx3iaRyvmWlTsx3vMLs7r7um1Eimv8NwRKz4Lsdk9bcGzRJAoPzXnwdBIR95KCRLPkB/exec",
       description: "Panel de control con métricas y estadísticas del sistema",
-      icon: <DashboardIcon className="h-4 w-4 mr-2" />,
+      icon: <DashboardIcon className="h-4 w-4 mr-2" aria-hidden="true" />,
+      shortcut: "0",
     },
     {
       id: "admin",
       name: "Administración",
       url: "https://script.google.com/macros/s/AKfycbwX7pmNj9iyXicZmHfaPb4lzJGz0N15Y6lNBTBtSyw-qIuWoi9GsK7tSs-ZH1V4f1Oh/exec",
       description: "Panel de administración del sistema de gestión de pedidos",
-      icon: <LayoutDashboard className="h-4 w-4 mr-2" />,
+      icon: <LayoutDashboard className="h-4 w-4 mr-2" aria-hidden="true" />,
+      shortcut: "1",
     },
     {
       id: "prep",
       name: "Preparación",
       url: "https://script.google.com/macros/s/AKfycbzJ9lmty8W28vFCfcn-7grdyawGn8W5vubegNHOt1-ZkKx3ovkaXurjZS7zGuErfnMC/exec",
       description: "Aplicación para la preparación de pedidos",
-      icon: <PackageOpen className="h-4 w-4 mr-2" />,
+      icon: <PackageOpen className="h-4 w-4 mr-2" aria-hidden="true" />,
+      shortcut: "2",
     },
   ]
 
@@ -101,13 +112,35 @@ export default function Home() {
     { key: "Alt + S", description: "Abrir configuración" },
     { key: "Alt + H", description: "Mostrar atajos de teclado" },
     { key: "Esc", description: "Salir de pantalla completa" },
+    { key: "Flecha izquierda", description: "Aplicación anterior" },
+    { key: "Flecha derecha", description: "Aplicación siguiente" },
   ]
 
-  // Apply the selected accent color to CSS variables
+  // Apply the selected accent color and accessibility settings to CSS variables
   useEffect(() => {
     document.documentElement.style.setProperty("--accent-color", accentColor)
     document.documentElement.setAttribute("data-accent", accentColor)
-  }, [accentColor])
+
+    // Apply font size
+    document.documentElement.classList.remove("text-sm", "text-base", "text-lg")
+    if (fontSize === "small") document.documentElement.classList.add("text-sm")
+    else if (fontSize === "large") document.documentElement.classList.add("text-lg")
+    else document.documentElement.classList.add("text-base")
+
+    // Apply high contrast
+    if (highContrast) {
+      document.documentElement.classList.add("high-contrast")
+    } else {
+      document.documentElement.classList.remove("high-contrast")
+    }
+
+    // Apply reduced motion
+    if (reduceMotion) {
+      document.documentElement.classList.add("reduce-motion")
+    } else {
+      document.documentElement.classList.remove("reduce-motion")
+    }
+  }, [accentColor, fontSize, highContrast, reduceMotion])
 
   // Handle online/offline status
   useEffect(() => {
@@ -177,18 +210,21 @@ export default function Home() {
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip if user is typing in an input field
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
       if (e.altKey) {
         switch (e.key) {
           case "0":
-            document
-              .querySelector('[data-value="dashboard"]')
-              ?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+            switchToApp("dashboard")
             break
           case "1":
-            document.querySelector('[data-value="admin"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+            switchToApp("admin")
             break
           case "2":
-            document.querySelector('[data-value="prep"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+            switchToApp("prep")
             break
           case "r":
           case "R":
@@ -213,6 +249,16 @@ export default function Home() {
             setShowKeyboardShortcuts(true)
             break
         }
+      } else {
+        // Navigation with arrow keys
+        switch (e.key) {
+          case "ArrowLeft":
+            navigateToAdjacentApp(-1)
+            break
+          case "ArrowRight":
+            navigateToAdjacentApp(1)
+            break
+        }
       }
     }
 
@@ -220,7 +266,7 @@ export default function Home() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
     }
-  }, [resolvedTheme, setTheme])
+  }, [resolvedTheme, setTheme, activeTab])
 
   // Avoid hydration mismatch and handle loading state
   useEffect(() => {
@@ -234,18 +280,73 @@ export default function Home() {
     return () => clearTimeout(timer)
   }, [])
 
-  // Check for app parameter in URL
+  // Check for app parameter in URL and set active tab
   useEffect(() => {
     const appParam = searchParams.get("app")
     if (appParam && apps.some((app) => app.id === appParam)) {
-      document.querySelector(`[data-value="${appParam}"]`)?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+      setActiveTab(appParam)
+      switchToApp(appParam)
     }
   }, [searchParams, mounted, apps])
+
+  // Load user preferences from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedFontSize = localStorage.getItem("oms-font-size") || "normal"
+      const savedHighContrast = localStorage.getItem("oms-high-contrast") === "true"
+      const savedReduceMotion = localStorage.getItem("oms-reduce-motion") === "true"
+      const savedShowMobileNav = localStorage.getItem("oms-show-mobile-nav") !== "false"
+      const savedLowDataMode = localStorage.getItem("oms-low-data-mode") === "true"
+      const savedAccentColor = localStorage.getItem("oms-accent-color") || "blue"
+
+      setFontSize(savedFontSize)
+      setHighContrast(savedHighContrast)
+      setReduceMotion(savedReduceMotion)
+      setShowMobileNav(savedShowMobileNav)
+      setLowDataMode(savedLowDataMode)
+      setAccentColor(savedAccentColor)
+    }
+  }, [])
+
+  // Save preferences to localStorage when they change
+  useEffect(() => {
+    if (typeof window !== "undefined" && mounted) {
+      localStorage.setItem("oms-font-size", fontSize)
+      localStorage.setItem("oms-high-contrast", highContrast.toString())
+      localStorage.setItem("oms-reduce-motion", reduceMotion.toString())
+      localStorage.setItem("oms-show-mobile-nav", showMobileNav.toString())
+      localStorage.setItem("oms-low-data-mode", lowDataMode.toString())
+      localStorage.setItem("oms-accent-color", accentColor)
+    }
+  }, [fontSize, highContrast, reduceMotion, showMobileNav, lowDataMode, accentColor, mounted])
 
   // Handle iframe loading
   const handleIframeLoad = () => {
     // You can add additional logic here if needed
   }
+
+  // Switch to a specific app
+  const switchToApp = (appId: string) => {
+    setActiveTab(appId)
+    document.querySelector(`[data-value="${appId}"]`)?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+  }
+
+  // Navigate to adjacent app
+  const navigateToAdjacentApp = (direction: number) => {
+    const currentIndex = apps.findIndex((app) => app.id === activeTab)
+    if (currentIndex === -1) return
+
+    const nextIndex = (currentIndex + direction + apps.length) % apps.length
+    switchToApp(apps[nextIndex].id)
+  }
+
+  // Setup swipe handlers for mobile
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => navigateToAdjacentApp(1),
+    onSwipedRight: () => navigateToAdjacentApp(-1),
+    preventDefaultTouchmoveEvent: true,
+    trackMouse: false,
+  })
 
   const toggleFullscreen = () => {
     const iframe = document.querySelector(".app-iframe") as HTMLElement
@@ -331,391 +432,499 @@ export default function Home() {
   const isDark = currentTheme === "dark"
 
   return (
-    <main className={`min-h-screen bg-background transition-colors duration-300`}>
-      {/* Loading Banner */}
-      {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background transition-opacity duration-500">
-          <div className="flex flex-col items-center space-y-4 p-8 rounded-lg bg-card border shadow-lg">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full border-4 border-accent/20 border-t-accent animate-spin"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white font-bold text-xs">
-                  OMS
-                </div>
-              </div>
-            </div>
-            <h2 className="text-xl font-semibold text-foreground">Cargando Sistema</h2>
-            <p className="text-sm text-muted-foreground">Preparando su interfaz de gestión...</p>
-          </div>
-        </div>
-      )}
-
-      {/* Offline Banner */}
-      {!isOnline && (
-        <div className="fixed top-0 inset-x-0 z-40 bg-destructive text-destructive-foreground p-2 text-center text-sm">
-          <div className="flex items-center justify-center gap-2">
-            <WifiOff className="h-4 w-4" />
-            <span>Sin conexión - Modo offline</span>
-          </div>
-        </div>
-      )}
-
-      <div className={cn("container mx-auto p-4", !isOnline && "pt-10")}>
-        <Card
-          className={cn(
-            "mb-6 border-l-4 border-l-accent shadow-md transition-all duration-300",
-            isDark ? "bg-card text-card-foreground" : "",
-          )}
-        >
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center">
-                <div className="mr-3 p-2 rounded-full bg-accent/10">
-                  <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white font-bold">
+    <>
+      <SkipNavLink />
+      <main
+        className={cn(
+          "min-h-screen bg-background transition-colors",
+          reduceMotion ? "transition-none" : "duration-300",
+          highContrast && "high-contrast-mode",
+          fontSize === "small" ? "text-sm" : fontSize === "large" ? "text-lg" : "text-base",
+        )}
+      >
+        {/* Loading Banner */}
+        {loading && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background transition-opacity duration-500">
+            <div className="flex flex-col items-center space-y-4 p-8 rounded-lg bg-card border shadow-lg">
+              <div className="relative">
+                <div
+                  className={cn(
+                    "w-16 h-16 rounded-full border-4 border-accent/20 border-t-accent",
+                    !reduceMotion && "animate-spin",
+                  )}
+                ></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white font-bold text-xs">
                     OMS
                   </div>
                 </div>
-                <div>
-                  <CardTitle className="text-2xl">Sistema de Gestión de Pedidos</CardTitle>
-                  <CardDescription className="text-sm">
-                    Accede a las aplicaciones de administración y preparación desde una sola interfaz
-                  </CardDescription>
-                </div>
               </div>
-              <div className="flex gap-2">
-                {isInstallable && (
+              <h2 className="text-xl font-semibold text-foreground">Cargando Sistema</h2>
+              <p className="text-sm text-muted-foreground">Preparando su interfaz de gestión...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Offline Banner */}
+        {!isOnline && (
+          <div className="fixed top-0 inset-x-0 z-40 bg-destructive text-destructive-foreground p-2 text-center text-sm">
+            <div className="flex items-center justify-center gap-2">
+              <WifiOff className="h-4 w-4" aria-hidden="true" />
+              <span>Sin conexión - Modo offline</span>
+            </div>
+          </div>
+        )}
+
+        <div className={cn("container mx-auto px-2 sm:px-4", !isOnline && "pt-10")}>
+          <SkipNavContent />
+          <Card
+            className={cn(
+              "mb-4 sm:mb-6 border-l-4 border-l-accent shadow-md transition-all",
+              reduceMotion ? "transition-none" : "duration-300",
+              isDark ? "bg-card text-card-foreground" : "",
+            )}
+          >
+            <CardHeader className="py-3 px-3 sm:px-6 sm:py-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <div className="mr-2 sm:mr-3 p-1 sm:p-2 rounded-full bg-accent/10">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-accent flex items-center justify-center text-white font-bold">
+                      <span className="sr-only">Sistema de Gestión de Pedidos</span>
+                      OMS
+                    </div>
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg sm:text-2xl">Sistema de Gestión de Pedidos</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm hidden sm:block">
+                      Accede a las aplicaciones de administración y preparación desde una sola interfaz
+                    </CardDescription>
+                  </div>
+                </div>
+                <div className="flex gap-1 sm:gap-2">
+                  {isInstallable && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="rounded-full hover:bg-accent/10 hover:text-accent"
+                            onClick={installPwa}
+                            aria-label="Instalar aplicación"
+                          >
+                            <Download className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Instalar aplicación</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="icon"
                           className="rounded-full hover:bg-accent/10 hover:text-accent"
-                          onClick={installPwa}
+                          onClick={shareApp}
+                          aria-label="Compartir aplicación"
                         >
-                          <Download className="h-5 w-5" />
+                          <Share2 className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Instalar aplicación</p>
+                        <p>Compartir</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                )}
 
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="rounded-full hover:bg-accent/10 hover:text-accent"
-                        onClick={shareApp}
-                      >
-                        <Share2 className="h-5 w-5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Compartir</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="rounded-full hover:bg-accent/10 hover:text-accent"
+                          onClick={() => setTheme(isDark ? "light" : "dark")}
+                          aria-label={isDark ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+                        >
+                          {isDark ? (
+                            <Sun className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+                          ) : (
+                            <Moon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Cambiar tema</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
 
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="rounded-full hover:bg-accent/10 hover:text-accent"
-                        onClick={() => setTheme(isDark ? "light" : "dark")}
-                      >
-                        {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Cambiar tema</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="rounded-full hover:bg-accent/10 hover:text-accent"
-                          >
-                            <Keyboard className="h-5 w-5" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Atajos de teclado</DialogTitle>
-                            <DialogDescription>
-                              Utiliza estos atajos para navegar rápidamente por la aplicación
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="grid gap-4 py-4">
-                            {keyboardShortcuts.map((shortcut, index) => (
-                              <div key={index} className="flex items-center justify-between">
-                                <span className="font-medium">{shortcut.key}</span>
-                                <span className="text-muted-foreground">{shortcut.description}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <DialogFooter>
-                            <DialogClose asChild>
-                              <Button variant="outline">Cerrar</Button>
-                            </DialogClose>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Atajos de teclado</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="rounded-full hover:bg-accent/10 hover:text-accent"
-                      data-settings-trigger="true"
-                    >
-                      <Settings className="h-5 w-5" />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent className="border-l-accent border-l-4">
-                    <SheetHeader>
-                      <SheetTitle>Personalización</SheetTitle>
-                      <SheetDescription>Personaliza la apariencia de tu interfaz OMS</SheetDescription>
-                    </SheetHeader>
-                    <div className="py-6">
-                      <h3 className="text-sm font-medium mb-3">Color de acento</h3>
-                      <RadioGroup value={accentColor} onValueChange={setAccentColor} className="grid grid-cols-3 gap-2">
-                        {accentColors.map((color) => (
-                          <div key={color.value} className="flex items-center space-x-2">
-                            <RadioGroupItem value={color.value} id={`color-${color.value}`} className="sr-only" />
-                            <Label
-                              htmlFor={`color-${color.value}`}
-                              className={`flex items-center justify-between w-full p-2 rounded-md cursor-pointer border-2 ${
-                                accentColor === color.value ? "border-accent" : "border-transparent hover:border-muted"
-                              }`}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Dialog open={showKeyboardShortcuts} onOpenChange={setShowKeyboardShortcuts}>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="rounded-full hover:bg-accent/10 hover:text-accent"
+                              aria-label="Ver atajos de teclado"
                             >
-                              <div className="flex items-center">
-                                <div className={`w-4 h-4 rounded-full mr-2 ${color.class}`}></div>
-                                <span className="text-sm">{color.label}</span>
-                              </div>
-                              {accentColor === color.value && <Check className="h-4 w-4 text-accent" />}
+                              <Keyboard className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Atajos de teclado</DialogTitle>
+                              <DialogDescription>
+                                Utiliza estos atajos para navegar rápidamente por la aplicación
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                              {keyboardShortcuts.map((shortcut, index) => (
+                                <div key={index} className="flex items-center justify-between">
+                                  <span className="font-medium">{shortcut.key}</span>
+                                  <span className="text-muted-foreground">{shortcut.description}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button variant="outline">Cerrar</Button>
+                              </DialogClose>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Atajos de teclado</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full hover:bg-accent/10 hover:text-accent"
+                        data-settings-trigger="true"
+                        aria-label="Configuración"
+                      >
+                        <Settings className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent className="border-l-accent border-l-4 overflow-y-auto">
+                      <SheetHeader>
+                        <SheetTitle>Personalización</SheetTitle>
+                        <SheetDescription>Personaliza la apariencia de tu interfaz OMS</SheetDescription>
+                      </SheetHeader>
+                      <div className="py-6">
+                        <h3 className="text-sm font-medium mb-3">Color de acento</h3>
+                        <RadioGroup
+                          value={accentColor}
+                          onValueChange={setAccentColor}
+                          className="grid grid-cols-3 gap-2"
+                        >
+                          {accentColors.map((color) => (
+                            <div key={color.value} className="flex items-center space-x-2">
+                              <RadioGroupItem value={color.value} id={`color-${color.value}`} className="sr-only" />
+                              <Label
+                                htmlFor={`color-${color.value}`}
+                                className={`flex items-center justify-between w-full p-2 rounded-md cursor-pointer border-2 ${
+                                  accentColor === color.value
+                                    ? "border-accent"
+                                    : "border-transparent hover:border-muted"
+                                }`}
+                              >
+                                <div className="flex items-center">
+                                  <div className={`w-4 h-4 rounded-full mr-2 ${color.class}`}></div>
+                                  <span className="text-sm">{color.label}</span>
+                                </div>
+                                {accentColor === color.value && (
+                                  <Check className="h-4 w-4 text-accent" aria-hidden="true" />
+                                )}
+                              </Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      </div>
+                      <Separator />
+                      <div className="py-6">
+                        <h3 className="text-sm font-medium mb-3">Tema</h3>
+                        <RadioGroup value={theme} onValueChange={setTheme} className="grid gap-2">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="light" id="theme-light" />
+                            <Label htmlFor="theme-light" className="flex items-center">
+                              <Sun className="h-4 w-4 mr-2" aria-hidden="true" />
+                              Claro
                             </Label>
                           </div>
-                        ))}
-                      </RadioGroup>
-                    </div>
-                    <Separator />
-                    <div className="py-6">
-                      <h3 className="text-sm font-medium mb-3">Tema</h3>
-                      <RadioGroup value={theme} onValueChange={setTheme} className="grid gap-2">
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="light" id="theme-light" />
-                          <Label htmlFor="theme-light" className="flex items-center">
-                            <Sun className="h-4 w-4 mr-2" />
-                            Claro
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="dark" id="theme-dark" />
-                          <Label htmlFor="theme-dark" className="flex items-center">
-                            <Moon className="h-4 w-4 mr-2" />
-                            Oscuro
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="system" id="theme-system" />
-                          <Label htmlFor="theme-system">Sistema</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    <Separator />
-                    <div className="py-6">
-                      <h3 className="text-sm font-medium mb-3">Opciones adicionales</h3>
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="mobile-nav">Barra de navegación móvil</Label>
-                            <p className="text-xs text-muted-foreground">
-                              Mostrar barra de navegación en dispositivos móviles
-                            </p>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="dark" id="theme-dark" />
+                            <Label htmlFor="theme-dark" className="flex items-center">
+                              <Moon className="h-4 w-4 mr-2" aria-hidden="true" />
+                              Oscuro
+                            </Label>
                           </div>
-                          <Switch id="mobile-nav" checked={showMobileNav} onCheckedChange={setShowMobileNav} />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="low-data">Modo ahorro de datos</Label>
-                            <p className="text-xs text-muted-foreground">
-                              Reduce el consumo de datos en conexiones limitadas
-                            </p>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="system" id="theme-system" />
+                            <Label htmlFor="theme-system">Sistema</Label>
                           </div>
-                          <Switch id="low-data" checked={lowDataMode} onCheckedChange={setLowDataMode} />
+                        </RadioGroup>
+                      </div>
+                      <Separator />
+                      <div className="py-6">
+                        <h3 className="text-sm font-medium mb-3">Accesibilidad</h3>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="font-size">Tamaño de texto</Label>
+                            </div>
+                            <select
+                              id="font-size"
+                              value={fontSize}
+                              onChange={(e) => setFontSize(e.target.value)}
+                              className="rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                              aria-label="Seleccionar tamaño de texto"
+                            >
+                              <option value="small">Pequeño</option>
+                              <option value="normal">Normal</option>
+                              <option value="large">Grande</option>
+                            </select>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="high-contrast">Alto contraste</Label>
+                              <p className="text-xs text-muted-foreground">
+                                Mejora el contraste para mayor legibilidad
+                              </p>
+                            </div>
+                            <Switch id="high-contrast" checked={highContrast} onCheckedChange={setHighContrast} />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="reduce-motion">Reducir movimiento</Label>
+                              <p className="text-xs text-muted-foreground">Minimiza animaciones y transiciones</p>
+                            </div>
+                            <Switch id="reduce-motion" checked={reduceMotion} onCheckedChange={setReduceMotion} />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </SheetContent>
-                </Sheet>
+                      <Separator />
+                      <div className="py-6">
+                        <h3 className="text-sm font-medium mb-3">Opciones adicionales</h3>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="mobile-nav">Barra de navegación móvil</Label>
+                              <p className="text-xs text-muted-foreground">
+                                Mostrar barra de navegación en dispositivos móviles
+                              </p>
+                            </div>
+                            <Switch id="mobile-nav" checked={showMobileNav} onCheckedChange={setShowMobileNav} />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label htmlFor="low-data">Modo ahorro de datos</Label>
+                              <p className="text-xs text-muted-foreground">
+                                Reduce el consumo de datos en conexiones limitadas
+                              </p>
+                            </div>
+                            <Switch id="low-data" checked={lowDataMode} onCheckedChange={setLowDataMode} />
+                          </div>
+                        </div>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="flex justify-between items-center mb-2 sm:mb-4">
+              <div className="flex items-center">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="mr-1 hidden sm:flex"
+                  onClick={() => navigateToAdjacentApp(-1)}
+                  aria-label="Aplicación anterior"
+                >
+                  <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                </Button>
+                <TabsList className={cn("bg-background border h-9 sm:h-10", isDark ? "border-border" : "")}>
+                  {apps.map((app) => (
+                    <TabsTrigger
+                      key={app.id}
+                      value={app.id}
+                      data-value={app.id}
+                      className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground h-8 sm:h-9 px-2 sm:px-3"
+                      aria-label={`Ir a ${app.name} (Alt+${app.shortcut})`}
+                    >
+                      <div className="flex items-center">
+                        {app.icon}
+                        <span className="hidden sm:inline">{app.name}</span>
+                        <span className="sm:hidden">{app.name.substring(0, 1)}</span>
+                      </div>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="ml-1 hidden sm:flex"
+                  onClick={() => navigateToAdjacentApp(1)}
+                  aria-label="Aplicación siguiente"
+                >
+                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </div>
+
+              <div className="flex gap-1 sm:gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={refreshIframe}
+                        aria-label="Refrescar aplicación (Alt+R)"
+                        className="h-8 w-8 sm:h-9 sm:w-9 rounded-full hover:bg-accent/10 hover:text-accent"
+                      >
+                        <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Refrescar (Alt+R)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={toggleFullscreen}
+                        aria-label="Pantalla completa (Alt+F)"
+                        className="h-8 w-8 sm:h-9 sm:w-9 rounded-full hover:bg-accent/10 hover:text-accent"
+                      >
+                        <Maximize2 className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Pantalla completa (Alt+F)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
-          </CardHeader>
-        </Card>
 
-        <Tabs defaultValue="dashboard" className="w-full">
-          <div className="flex justify-between items-center mb-4">
-            <TabsList className={cn("bg-background border", isDark ? "border-border" : "")}>
+            <div {...swipeHandlers} className="touch-pan-y">
               {apps.map((app) => (
-                <TabsTrigger
-                  key={app.id}
-                  value={app.id}
-                  data-value={app.id}
-                  className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground"
-                >
-                  <div className="flex items-center">
-                    {app.icon}
-                    {app.name}
-                  </div>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            <div className="flex gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={refreshIframe}
-                      title="Refrescar aplicación"
-                      className="rounded-full hover:bg-accent/10 hover:text-accent"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Refrescar (Alt+R)</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={toggleFullscreen}
-                      title="Pantalla completa"
-                      className="rounded-full hover:bg-accent/10 hover:text-accent"
-                    >
-                      <Maximize2 className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Pantalla completa (Alt+F)</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
-
-          {apps.map((app) => (
-            <TabsContent key={app.id} value={app.id} className="mt-0">
-              <Card
-                className={cn(
-                  "overflow-hidden shadow-lg border-t-4 border-t-accent transition-all duration-300",
-                  isDark ? "bg-card text-card-foreground" : "",
-                )}
-              >
-                <CardHeader className={cn("bg-muted/30 py-3", isDark ? "bg-muted/10" : "")}>
-                  <div className="flex items-center">
-                    {app.icon}
-                    <div>
-                      <CardTitle>{app.name}</CardTitle>
-                      <CardDescription>{app.description}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div
+                <TabsContent key={app.id} value={app.id} className="mt-0">
+                  <Card
                     className={cn(
-                      "w-full h-[calc(100vh-280px)] rounded-b-lg overflow-hidden relative",
-                      isDark ? "bg-background" : "bg-background",
+                      "overflow-hidden shadow-lg border-t-4 border-t-accent transition-all",
+                      reduceMotion ? "transition-none" : "duration-300",
+                      isDark ? "bg-card text-card-foreground" : "",
                     )}
                   >
-                    {lowDataMode && (
-                      <div className="absolute top-0 left-0 right-0 bg-accent/10 text-center py-1 text-xs">
-                        Modo ahorro de datos activado
+                    <CardHeader className={cn("bg-muted/30 py-2 sm:py-3", isDark ? "bg-muted/10" : "")}>
+                      <div className="flex items-center">
+                        {app.icon}
+                        <div>
+                          <CardTitle className="text-base sm:text-lg">{app.name}</CardTitle>
+                          <CardDescription className="text-xs sm:text-sm hidden sm:block">
+                            {app.description}
+                          </CardDescription>
+                        </div>
                       </div>
-                    )}
-                    <iframe
-                      key={`${app.id}-${refreshKey}`}
-                      src={app.url}
-                      className={cn("app-iframe w-full h-full border-0", lowDataMode && "filter grayscale")}
-                      title={app.name}
-                      allow="fullscreen"
-                      onLoad={handleIframeLoad}
-                      loading={lowDataMode ? "lazy" : "eager"}
-                    ></iframe>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
-        </Tabs>
-      </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div
+                        className={cn(
+                          "w-full rounded-b-lg overflow-hidden relative",
+                          "h-[calc(100vh-230px)] sm:h-[calc(100vh-280px)]",
+                          isDark ? "bg-background" : "bg-background",
+                        )}
+                      >
+                        {lowDataMode && (
+                          <div className="absolute top-0 left-0 right-0 bg-accent/10 text-center py-1 text-xs z-10">
+                            Modo ahorro de datos activado
+                          </div>
+                        )}
+                        <iframe
+                          key={`${app.id}-${refreshKey}`}
+                          src={app.url}
+                          className={cn(
+                            "app-iframe w-full h-full border-0",
+                            lowDataMode && "filter grayscale",
+                            reduceMotion && "scroll-smooth",
+                          )}
+                          title={app.name}
+                          allow="fullscreen"
+                          onLoad={handleIframeLoad}
+                          loading={lowDataMode ? "lazy" : "eager"}
+                          aria-label={`Aplicación ${app.name}`}
+                        ></iframe>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              ))}
+            </div>
+          </Tabs>
+        </div>
 
-      {/* Mobile Navigation Bar */}
-      {showMobileNav && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border p-2 z-40">
-          <div className="flex justify-around items-center">
-            {apps.map((app) => (
+        {/* Mobile Navigation Bar */}
+        {showMobileNav && (
+          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border p-2 z-40">
+            <div className="flex justify-around items-center">
+              {apps.map((app) => (
+                <Button
+                  key={app.id}
+                  variant="ghost"
+                  className={cn(
+                    "flex flex-col items-center py-2 px-1 rounded-lg",
+                    activeTab === app.id && "bg-accent/10 text-accent",
+                  )}
+                  onClick={() => switchToApp(app.id)}
+                  aria-label={`Ir a ${app.name}`}
+                  aria-current={activeTab === app.id ? "page" : undefined}
+                >
+                  <div className="mb-1">{app.icon}</div>
+                  <span className="text-xs">{app.name}</span>
+                </Button>
+              ))}
               <Button
-                key={app.id}
                 variant="ghost"
-                className="flex flex-col items-center py-2 px-3 rounded-lg"
+                className="flex flex-col items-center py-2 px-1 rounded-lg"
                 onClick={() => {
                   document
-                    .querySelector(`[data-value="${app.id}"]`)
+                    .querySelector('[data-settings-trigger="true"]')
                     ?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
                 }}
+                aria-label="Ajustes"
               >
-                <div className="mb-1">{app.icon}</div>
-                <span className="text-xs">{app.name}</span>
+                <Settings className="h-4 w-4 mb-1" aria-hidden="true" />
+                <span className="text-xs">Ajustes</span>
               </Button>
-            ))}
-            <Button
-              variant="ghost"
-              className="flex flex-col items-center py-2 px-3 rounded-lg"
-              onClick={() => {
-                document
-                  .querySelector('[data-settings-trigger="true"]')
-                  ?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-              }}
-            >
-              <Settings className="h-4 w-4 mb-1" />
-              <span className="text-xs">Ajustes</span>
-            </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Toast notifications */}
-      <Toaster />
-    </main>
+        {/* Toast notifications */}
+        <Toaster />
+      </main>
+    </>
   )
 }
