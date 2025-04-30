@@ -59,6 +59,13 @@
   ],
   "shortcuts": [
     {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Ir al panel de control",
+      "url": "/?app=dashboard",
+      "icons": [{ "src": "/icons/dashboard-icon.png", "sizes": "192x192" }]
+    },
+    {
       "name": "Administración",
       "short_name": "Admin",
       "description": "Ir a la aplicación de administración",

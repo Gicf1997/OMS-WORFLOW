@@ -39,6 +39,7 @@ import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
+import { DashboardIcon } from "@/components/dashboard-icon"
 
 export default function Home() {
   const searchParams = useSearchParams()
@@ -67,6 +68,13 @@ export default function Home() {
 
   const apps = [
     {
+      id: "dashboard",
+      name: "Dashboard",
+      url: "https://script.google.com/macros/s/AKfycbx3iaRyvmWlTsx3vMLs7r7um1Eimv8NwRKz4Lsdk9bcGzRJAoPzXnwdBIR95KCRLPkB/exec",
+      description: "Panel de control con métricas y estadísticas del sistema",
+      icon: <DashboardIcon className="h-4 w-4 mr-2" />,
+    },
+    {
       id: "admin",
       name: "Administración",
       url: "https://script.google.com/macros/s/AKfycbwX7pmNj9iyXicZmHfaPb4lzJGz0N15Y6lNBTBtSyw-qIuWoi9GsK7tSs-ZH1V4f1Oh/exec",
@@ -84,6 +92,7 @@ export default function Home() {
 
   // Keyboard shortcuts
   const keyboardShortcuts = [
+    { key: "Alt + 0", description: "Ir a Dashboard" },
     { key: "Alt + 1", description: "Ir a Administración" },
     { key: "Alt + 2", description: "Ir a Preparación" },
     { key: "Alt + R", description: "Refrescar aplicación actual" },
@@ -170,6 +179,11 @@ export default function Home() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey) {
         switch (e.key) {
+          case "0":
+            document
+              .querySelector('[data-value="dashboard"]')
+              ?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+            break
           case "1":
             document.querySelector('[data-value="admin"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
             break
@@ -223,10 +237,10 @@ export default function Home() {
   // Check for app parameter in URL
   useEffect(() => {
     const appParam = searchParams.get("app")
-    if (appParam && (appParam === "admin" || appParam === "prep")) {
+    if (appParam && apps.some((app) => app.id === appParam)) {
       document.querySelector(`[data-value="${appParam}"]`)?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     }
-  }, [searchParams, mounted])
+  }, [searchParams, mounted, apps])
 
   // Handle iframe loading
   const handleIframeLoad = () => {
@@ -560,7 +574,7 @@ export default function Home() {
           </CardHeader>
         </Card>
 
-        <Tabs defaultValue="admin" className="w-full">
+        <Tabs defaultValue="dashboard" className="w-full">
           <div className="flex justify-between items-center mb-4">
             <TabsList className={cn("bg-background border", isDark ? "border-border" : "")}>
               {apps.map((app) => (
@@ -649,7 +663,7 @@ export default function Home() {
                       </div>
                     )}
                     <iframe
-                      key={refreshKey}
+                      key={`${app.id}-${refreshKey}`}
                       src={app.url}
                       className={cn("app-iframe w-full h-full border-0", lowDataMode && "filter grayscale")}
                       title={app.name}
