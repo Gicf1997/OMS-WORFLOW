@@ -78,7 +78,7 @@ export default function Home() {
     {
       id: "dashboard",
       name: "Dashboard",
-      url: "https://script.google.com/macros/s/AKfycbyTjWdxb3XwQNbPoYOSOB1UAbSV7PfJeN6cLswaQmZ1hBDTQLflMNNN0yOdLU72q9BE/exec",
+      url: "https://script.google.com/macros/s/AKfycbyj4h8m5_44SBNDpsMGcO4AJTNkpqO7cHRy_vnEYYcIU_DZHHT5IS4u5exMX8lOac75/exec",
       description: "Panel de control con métricas y estadísticas del sistema",
       icon: <DashboardIcon className="h-4 w-4 mr-2" aria-hidden="true" />,
       shortcut: "0",
