@@ -94,7 +94,7 @@ export default function Home() {
     {
       id: "prep",
       name: "Preparación",
-      url: "https://script.google.com/macros/s/AKfycbzJ9lmty8W28vFCfcn-7grdyawGn8W5vubegNHOt1-ZkKx3ovkaXurjZS7zGuErfnMC/exec",
+      url: "https://script.google.com/macros/s/AKfycbxR2I7JnDpb3V-YlIn2UK1CpdPqs_gIRDiUs2mkcdWFl7adNYCjc5JoQlqqUBICGlsH/exec",
       description: "Aplicación para la preparación de pedidos",
       icon: <PackageOpen className="h-4 w-4 mr-2" aria-hidden="true" />,
       shortcut: "2",
