@@ -1,8 +1,8 @@
 import { sha256 } from "./crypto-utils"
 
-// URL de tu aplicación web de Google Apps Script
-// Reemplaza esto con la URL real de tu implementación
-const AUTH_API_URL = "https://script.google.com/macros/s/TU_ID_DE_IMPLEMENTACION/exec"
+// Actualizar la URL de la API de autenticación
+const AUTH_API_URL =
+  "https://script.google.com/macros/s/AKfycbxDcySN9e36K7njXP7HvgaIY6q6jFlYrVQOUsyu85rE-qZueUY66XOfWqgIl4CBaf5wog/exec"
 
 interface UserResult {
   success: boolean

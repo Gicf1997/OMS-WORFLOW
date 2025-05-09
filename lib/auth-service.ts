@@ -1,5 +1,9 @@
 import { sha256 } from "./crypto-utils"
 
+// Actualizar la URL de la API de autenticación
+const AUTH_API_URL =
+  "https://script.google.com/macros/s/AKfycbxDcySN9e36K7njXP7HvgaIY6q6jFlYrVQOUsyu85rE-qZueUY66XOfWqgIl4CBaf5wog/exec"
+
 // This would be replaced with actual API calls to your Google Sheet
 // For now, we'll simulate with a mock implementation
 
@@ -30,24 +34,31 @@ interface VerifyResult {
 
 export async function verifyCredentials(username: string, password: string): Promise<VerifyResult> {
   try {
-    // In a real implementation, this would make an API call to a Google Apps Script
-    // that reads from your Google Sheet
-
-    // For demo purposes, we'll use the mock data
+    // Generar hash de la contraseña
     const passwordHash = await sha256(password)
-    const user = MOCK_USERS.find((u) => u.username === username && u.passwordHash === passwordHash)
 
-    if (user) {
+    // Llamar a la API de Google Apps Script
+    const response = await fetch(
+      `${AUTH_API_URL}?action=verifyCredentials&username=${encodeURIComponent(username)}&passwordHash=${encodeURIComponent(passwordHash)}`,
+    )
+
+    if (!response.ok) {
+      throw new Error("Error en la respuesta del servidor")
+    }
+
+    const data = await response.json()
+
+    if (data.success) {
       return {
         success: true,
-        role: user.role,
-        name: user.name,
+        role: data.role,
+        name: data.name,
       }
     }
 
     return {
       success: false,
-      message: "Credenciales inválidas",
+      message: data.message || "Credenciales inválidas",
     }
   } catch (error) {
     console.error("Error verifying credentials:", error)
