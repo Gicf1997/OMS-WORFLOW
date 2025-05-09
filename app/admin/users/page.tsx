@@ -76,7 +76,7 @@ export default function UsersAdminPage() {
       return
     }
 
-    if (userRole !== "admin") {
+    if (userRole?.toLowerCase() !== "admin") {
       toast({
         title: "Acceso denegado",
         description: "No tienes permisos para acceder a esta sección",

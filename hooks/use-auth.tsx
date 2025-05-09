@@ -25,7 +25,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const authData = JSON.parse(storedAuth)
         setIsAuthenticated(true)
-        setUserRole(authData.role)
+        // Asegurar que el rol esté en minúsculas
+        setUserRole(authData.role?.toLowerCase() || "picker")
         setUserName(authData.name)
       } catch (error) {
         console.error("Error parsing auth data:", error)
@@ -34,21 +35,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Modificar la función login para manejar correctamente las mayúsculas/minúsculas
+  // y asegurar que la comparación de roles sea insensible a mayúsculas/minúsculas
+
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const result = await verifyCredentials(username, password)
+      // Convertir el nombre de usuario a mayúsculas para coincidir con la hoja de cálculo
+      const result = await verifyCredentials(username.toUpperCase(), password)
 
       if (result.success) {
+        // Convertir el rol a minúsculas para estandarizar
+        const standardizedRole = result.role?.toLowerCase() || "picker"
+
         setIsAuthenticated(true)
-        setUserRole(result.role)
+        setUserRole(standardizedRole)
         setUserName(result.name)
 
         // Store auth data in localStorage
         localStorage.setItem(
           "oms-auth",
           JSON.stringify({
-            username,
-            role: result.role,
+            username: username.toUpperCase(),
+            role: standardizedRole,
             name: result.name,
           }),
         )

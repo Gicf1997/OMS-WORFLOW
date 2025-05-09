@@ -40,13 +40,22 @@ export async function verifyCredentials(username: string, password: string): Pro
     // Llamar a la API de Google Apps Script
     const response = await fetch(
       `${AUTH_API_URL}?action=verifyCredentials&username=${encodeURIComponent(username)}&passwordHash=${encodeURIComponent(passwordHash)}`,
+      {
+        method: "GET",
+        mode: "cors",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
     )
 
     if (!response.ok) {
+      console.error("Server response not OK:", await response.text())
       throw new Error("Error en la respuesta del servidor")
     }
 
     const data = await response.json()
+    console.log("Auth response:", data)
 
     if (data.success) {
       return {

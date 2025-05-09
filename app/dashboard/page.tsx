@@ -20,7 +20,7 @@ export default function DashboardPage() {
       return
     }
 
-    // Check if user has admin role
+    // Check if user has admin role (case insensitive)
     if (userRole !== "admin") {
       toast({
         title: "Acceso denegado",

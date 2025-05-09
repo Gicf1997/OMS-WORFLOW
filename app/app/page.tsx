@@ -84,7 +84,7 @@ export default function AppPage() {
       {
         id: "prep",
         name: "Preparación",
-        url: "https://script.google.com/macros/s/AKfycbwWH_zGR0ryJwMH0ckt4KkUpK97K8j2ijlJW6S91TeWl3mrhuuPlW08mi2dJMieRJI/exec",
+        url: "https://script.google.com/macros/s/AKfycbzJ9lmty8W28vFCfcn-7grdyawGn8W5vubegNHOt1-ZkKx3ovkaXurjZS7zGuErfnMC/exec",
         description: "Aplicación para la preparación de pedidos",
         icon: <PackageOpen className="h-4 w-4 mr-2" aria-hidden="true" />,
         shortcut: "2",
@@ -92,8 +92,8 @@ export default function AppPage() {
       },
     ]
 
-    // Filter apps based on user role
-    if (mode === "admin" && userRole === "admin") {
+    // Filter apps based on user role - make case insensitive comparison
+    if (mode === "admin" && userRole?.toLowerCase() === "admin") {
       return allApps
     } else {
       // For picker mode or non-admin users, only show prep app
