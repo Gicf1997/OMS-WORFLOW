@@ -80,7 +80,7 @@ export function AppTabs({ activeTab, setActiveTab, user, isDirectAccess = false 
 
           <iframe
             id="iframe-preparacion"
-            src="https://script.googleusercontent.com/macros/echo?user_content_key=AKfycbwLCEICqyo_W7iyS-SWaX9QpmS4jk73ebfFRfEiUjzPvl8WnKIL9m_X8x5Wdz3icJeX"
+            src="https://script.google.com/macros/s/AKfycbyS-U2gfG6pZ4QUME7jG_0HrNsfgGqmly4f84Zfj0xA98e-dtgg3uwW1Pa6dIV3cpfj/exec"
             className="w-full h-full border-0"
             title="Preparación"
             onLoad={() => handleIframeLoad("preparacion")}
