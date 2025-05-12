@@ -96,7 +96,8 @@ function SidebarContent({
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-1">
           <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">APLICACIONES</h3>
-          {(!user || user?.role === "ADMIN") && (
+          {/* Solo mostrar todas las opciones si el usuario es ADMIN */}
+          {user?.role === "ADMIN" ? (
             <>
               <Button
                 variant={activeTab === "dashboard" ? "secondary" : "ghost"}
@@ -112,15 +113,24 @@ function SidebarContent({
               >
                 Administración
               </Button>
+              <Button
+                variant={activeTab === "preparacion" ? "secondary" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("preparacion")}
+              >
+                Preparación
+              </Button>
             </>
+          ) : (
+            // Si no es ADMIN, solo mostrar Preparación
+            <Button
+              variant={activeTab === "preparacion" ? "secondary" : "ghost"}
+              className="w-full justify-start"
+              onClick={() => setActiveTab("preparacion")}
+            >
+              Preparación
+            </Button>
           )}
-          <Button
-            variant={activeTab === "preparacion" ? "secondary" : "ghost"}
-            className="w-full justify-start"
-            onClick={() => setActiveTab("preparacion")}
-          >
-            Preparación
-          </Button>
         </div>
       </ScrollArea>
 

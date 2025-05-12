@@ -23,6 +23,7 @@ export default function Portal() {
   const [activeTab, setActiveTab] = useState("preparacion")
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [showThemeCustomizer, setShowThemeCustomizer] = useState(false)
+  const [isDirectAccess, setIsDirectAccess] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const appParam = searchParams.get("app")
@@ -35,6 +36,7 @@ export default function Portal() {
     if (appParam === "preparacion") {
       // Si viene de "Realizar Picking", no necesita autenticación
       setActiveTab("preparacion")
+      setIsDirectAccess(true) // Marcar como acceso directo
     } else if (!storedUser) {
       // Si no hay usuario almacenado y no es "Realizar Picking", redirigir al login
       router.push("/login")
@@ -84,10 +86,12 @@ export default function Portal() {
       <header className="border-b bg-card z-10">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle sidebar</span>
-            </Button>
+            {!isDirectAccess && (
+              <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle sidebar</span>
+              </Button>
+            )}
             <h1 className="text-xl font-bold">Portal OS</h1>
           </div>
           <div className="flex items-center gap-2">
@@ -111,19 +115,21 @@ export default function Portal() {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <Sidebar
-          isOpen={sidebarOpen}
-          setIsOpen={setSidebarOpen}
-          user={user}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          onLogout={handleLogout}
-        />
+        {/* Sidebar - Solo mostrar si no es acceso directo */}
+        {!isDirectAccess && (
+          <Sidebar
+            isOpen={sidebarOpen}
+            setIsOpen={setSidebarOpen}
+            user={user}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            onLogout={handleLogout}
+          />
+        )}
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
-          <AppTabs activeTab={activeTab} setActiveTab={setActiveTab} user={user} />
+          <AppTabs activeTab={activeTab} setActiveTab={setActiveTab} user={user} isDirectAccess={isDirectAccess} />
         </main>
       </div>
 

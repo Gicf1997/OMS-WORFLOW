@@ -49,6 +49,18 @@ export default function Login() {
       const data = await response.json()
 
       if (data.rol) {
+        // Verificar si el usuario tiene permisos de administrador
+        if (data.rol !== "ADMIN") {
+          toast({
+            title: "Acceso restringido",
+            description:
+              "No tienes permisos de administrador para acceder a este panel. Utiliza la opción 'Realizar Picking' desde la página principal.",
+            variant: "destructive",
+          })
+          setLoading(false)
+          return
+        }
+
         // Guardar información del usuario en localStorage
         localStorage.setItem(
           "user",
@@ -143,6 +155,9 @@ export default function Login() {
                     autoComplete="current-password"
                     className="bg-background"
                   />
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <p>Nota: Solo los usuarios con rol de Administrador pueden acceder a este panel.</p>
                 </div>
               </CardContent>
               <CardFooter>
