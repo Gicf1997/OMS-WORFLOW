@@ -179,7 +179,7 @@ export function AppTabs({ activeTab, setActiveTab, user, isDirectAccess = false 
 
               <iframe
                 id="iframe-administracion"
-                src="https://script.google.com/macros/s/AKfycbzDXe0WMsOOLytdllqCrzt6HvD92CWJgagtuK_9_zpQZn-TtLPaXAknIXR5BD5_Ah2i/exec"
+                src="https://script.google.com/macros/s/AKfycbzKf4j3xnqR8woIo6lxe3vSsv6xQe_xdBulBHq7fy7ceaB1WSQSViZxB0tXE1SQnrY9/exec"
                 className="w-full h-full border-0"
                 title="Administración"
                 onLoad={() => handleIframeLoad("administracion")}
