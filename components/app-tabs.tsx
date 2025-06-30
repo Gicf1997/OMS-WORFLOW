@@ -216,7 +216,7 @@ export function AppTabs({ activeTab, setActiveTab, user, isDirectAccess = false 
 
           <iframe
             id="iframe-preparacion"
-            src="https://script.google.com/macros/s/AKfycbyS-U2gfG6pZ4QUME7jG_0HrNsfgGqmly4f84Zfj0xA98e-dtgg3uwW1Pa6dIV3cpfj/exec"
+            src="https://script.google.com/macros/s/AKfycby6pYakWsIJxgSSFGZxefH56ELpTmg5dZ78Z-cdtRz8utvFcrZkDRN-TuGl3h7ic-dz/exec"
             className="w-full h-full border-0"
             title="Preparación"
             onLoad={() => handleIframeLoad("preparacion")}
